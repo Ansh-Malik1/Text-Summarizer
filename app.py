@@ -36,7 +36,7 @@ if st.button("Summarize content"):
     llm=ChatGroq(model="Gemma2-9b-it",api_key=groq_api_key)
     
     prompt_template="""
-    Provide the summary of the following content in 300 words:
+    Provide the summary of the following content in 350 words.
     Context:{text}
     """
     prompt=PromptTemplate(template=prompt_template,input_variables=["text"])
@@ -49,16 +49,16 @@ if st.button("Summarize content"):
     else:
         try:
             with st.spinner("Waiting..."):
-                if "youtube.com" in input_url:
-                    loader=YoutubeLoader.from_youtube_url(input_url,add_video_info=True)
-                else:
-                    loader=UnstructuredURLLoader(urls=[input_url],ssl_verify=False,
-                                                 headers={"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 13_5_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36"})
-                docs=loader.load()
+                video_id = input_url.split("=")[1]
+                transcript_text=YouTubeTranscriptApi.get_transcript(video_id)
+                transcript=""
+                for i in transcript_text:
+                    transcript+=" "+i["text"]
 
-                chain=load_summarize_chain(llm,chain_type="stuff",prompt=prompt)
-                output_summary=chain.run(docs)
+                chain=prompt|llm
+                output=chain.invoke(transcript)
+                summary=output.content
                 
-                st.success(output_summary)  
+                st.success(summary)  
         except Exception as e:
-            st.exception(e)        
+            st.exception(e)
